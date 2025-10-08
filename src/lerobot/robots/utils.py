@@ -68,6 +68,11 @@ def make_robot_from_config(config: RobotConfig) -> Robot:
         from tests.mocks.mock_robot import MockRobot
 
         return MockRobot(config)
+    elif config.type == "piper_follower":
+        from .piper_follower import PIPERFollower
+
+        logging.info(f"Creating robot from config: {pformat(config)}")
+        return PIPERFollower(config)
     else:
         try:
             return cast(Robot, make_device_from_device_class(config))
