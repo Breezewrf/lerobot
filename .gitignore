@@ -175,3 +175,7 @@ outputs/
 .cache/*
 
 output/
+*.stl
+*.urdf
+*.xml
+*.part
