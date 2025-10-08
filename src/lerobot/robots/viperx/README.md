@@ -115,11 +115,11 @@ If you uploaded your dataset to the hub with `--control.push_to_hub=true`, you c
 echo ${HF_USER}/aloha_test
 ```
 
-If you didn't upload with `--control.push_to_hub=false`, you can also visualize it locally with:
+If you didn't upload with `--control.push_to_hub=false`, you can also visualize it locally with [Rerun](https://github.com/rerun-io/rerun):
 
 ```bash
-python -m lerobot.scripts.visualize_dataset_html \
-  --repo-id ${HF_USER}/aloha_test
+python -m lerobot.scripts.visualize_dataset \
+  --repo-id ${HF_USER}/aloha_test --episode 0
 ```
 
 ## Replay an episode
@@ -141,10 +141,10 @@ python lerobot/scripts/control_robot.py \
 
 ## Train a policy
 
-To train a policy to control your robot, use the [`python -m lerobot.scripts.train`](../src/lerobot/scripts/train.py) script. A few arguments are required. Here is an example command:
+To train a policy to control your robot, use the [`lerobot-train`](../src/lerobot/scripts/train.py) script. A few arguments are required. Here is an example command:
 
 ```bash
-python -m lerobot.scripts.train \
+lerobot-train \
   --dataset.repo_id=${HF_USER}/aloha_test \
   --policy.type=act \
   --output_dir=outputs/train/act_aloha_test \

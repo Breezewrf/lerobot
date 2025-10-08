@@ -6,7 +6,7 @@
 
 <div align="center">
 
-[![Tests](https://github.com/huggingface/lerobot/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/huggingface/lerobot/actions/workflows/nighty.yml?query=branch%3Amain)
+[![Tests](https://github.com/huggingface/lerobot/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/huggingface/lerobot/actions/workflows/nightly.yml?query=branch%3Amain)
 [![Python versions](https://img.shields.io/pypi/pyversions/lerobot)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/huggingface/lerobot/blob/main/LICENSE)
 [![Status](https://img.shields.io/pypi/status/lerobot)](https://pypi.org/project/lerobot/)
@@ -101,6 +101,9 @@
 ## Installation
 
 LeRobot works with Python 3.10+ and PyTorch 2.2+.
+
+### Environment Setup
+
 Create a virtual environment with Python 3.10 and activate it, e.g. with [`miniconda`](https://docs.anaconda.com/free/miniconda/index.html):
 
 ```bash
@@ -124,10 +127,21 @@ conda install ffmpeg -c conda-forge
 >
 > - _[On Linux only]_ Install [ffmpeg build dependencies](https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu#GettheDependencies) and [compile ffmpeg from source with libsvtav1](https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu#libsvtav1), and make sure you use the corresponding ffmpeg binary to your install with `which ffmpeg`.
 
-Install 🤗 LeRobot:
+### Install LeRobot 🤗
+
+#### From Source
+
+First, clone the repository and navigate into the directory:
 
 ```bash
-pip install lerobot
+git clone https://github.com/huggingface/lerobot.git
+cd lerobot
+```
+
+Then, install the library in editable mode. This is useful if you plan to contribute to the code.
+
+```bash
+pip install -e .
 ```
 
 > **NOTE:** If you encounter build errors, you may need to install additional dependencies (`cmake`, `build-essential`, and `ffmpeg libs`). On Linux, run:
@@ -144,6 +158,34 @@ For instance, to install 🤗 LeRobot with aloha and pusht, use:
 ```bash
 pip install -e ".[aloha, pusht]"
 ```
+
+### Installation from PyPI
+
+**Core Library:**
+Install the base package with:
+
+```bash
+pip install lerobot
+```
+
+_This installs only the default dependencies._
+
+**Extra Features:**
+To install additional functionality, use one of the following:
+
+```bash
+pip install 'lerobot[all]'          # All available features
+pip install 'lerobot[aloha,pusht]'  # Specific features (Aloha & Pusht)
+pip install 'lerobot[feetech]'      # Feetech motor support
+```
+
+_Replace `[...]` with your desired features._
+
+**Available Tags:**
+For a full list of optional dependencies, see:
+https://pypi.org/project/lerobot/
+
+### Weights & Biases
 
 To use [Weights and Biases](https://docs.wandb.ai/quickstart) for experiment tracking, log in with
 
@@ -191,7 +233,7 @@ Under the hood, the `LeRobotDataset` format makes use of several ways to seriali
 
 Here are the important details and internal structure organization of a typical `LeRobotDataset` instantiated with `dataset = LeRobotDataset("lerobot/aloha_static_coffee")`. The exact features will change from dataset to dataset but not the main aspects:
 
-```
+````
 dataset attributes:
   ├ hf_dataset: a Hugging Face dataset (backed by Arrow/parquet). Typical features example:
   │  ├ observation.images.cam_high (VideoFrame):
@@ -204,20 +246,30 @@ dataset attributes:
   │  ├ timestamp (float32): timestamp in the episode
   │  ├ next.done (bool): indicates the end of an episode ; True for the last frame in each episode
   │  └ index (int64): general index in the whole dataset
-  ├ episode_data_index: contains 2 tensors with the start and end indices of each episode
-  │  ├ from (1D int64 tensor): first frame index for each episode — shape (num episodes,) starts with 0
-  │  └ to: (1D int64 tensor): last frame index for each episode — shape (num episodes,)
-  ├ stats: a dictionary of statistics (max, mean, min, std) for each feature in the dataset, for instance
-  │  ├ observation.images.cam_high: {'max': tensor with same number of dimensions (e.g. `(c, 1, 1)` for images, `(c,)` for states), etc.}
-  │  ...
-  ├ info: a dictionary of metadata on the dataset
-  │  ├ codebase_version (str): this is to keep track of the codebase version the dataset was created with
-  │  ├ fps (float): frame per second the dataset is recorded/synchronized to
-  │  ├ video (bool): indicates if frames are encoded in mp4 video files to save space or stored as png files
-  │  └ encoding (dict): if video, this documents the main options that were used with ffmpeg to encode the videos
-  ├ videos_dir (Path): where the mp4 videos or png images are stored/accessed
-  └ camera_keys (list of string): the keys to access camera features in the item returned by the dataset (e.g. `["observation.images.cam_high", ...]`)
-```
+  ├ meta: a LeRobotDatasetMetadata object containing:
+  │  ├ info: a dictionary of metadata on the dataset
+  │  │  ├ codebase_version (str): this is to keep track of the codebase version the dataset was created with
+  │  │  ├ fps (int): frame per second the dataset is recorded/synchronized to
+  │  │  ├ features (dict): all features contained in the dataset with their shapes and types
+  │  │  ├ total_episodes (int): total number of episodes in the dataset
+  │  │  ├ total_frames (int): total number of frames in the dataset
+  │  │  ├ robot_type (str): robot type used for recording
+  │  │  ├ data_path (str): formattable string for the parquet files
+  │  │  └ video_path (str): formattable string for the video files (if using videos)
+  │  ├ episodes: a DataFrame containing episode metadata with columns:
+  │  │  ├ episode_index (int): index of the episode
+  │  │  ├ tasks (list): list of tasks for this episode
+  │  │  ├ length (int): number of frames in this episode
+  │  │  ├ dataset_from_index (int): start index of this episode in the dataset
+  │  │  └ dataset_to_index (int): end index of this episode in the dataset
+  │  ├ stats: a dictionary of statistics (max, mean, min, std) for each feature in the dataset, for instance
+  │  │  ├ observation.images.front_cam: {'max': tensor with same number of dimensions (e.g. `(c, 1, 1)` for images, `(c,)` for states), etc.}
+  │  │  └ ...
+  │  └ tasks: a DataFrame containing task information with task names as index and task_index as values
+  ├ root (Path): local directory where the dataset is stored
+  ├ image_transforms (Callable): optional image transformations to apply to visual modalities
+  └ delta_timestamps (dict): optional delta timestamps for temporal queries
+decoding videos (e.g., 'pyav', 'torchcodec')
 
 A `LeRobotDataset` is serialised using several widespread file formats for each of its parts, namely:
 
@@ -234,22 +286,22 @@ Check out [example 2](https://github.com/huggingface/lerobot/blob/main/examples/
 We also provide a more capable script to parallelize the evaluation over multiple environments during the same rollout. Here is an example with a pretrained model hosted on [lerobot/diffusion_pusht](https://huggingface.co/lerobot/diffusion_pusht):
 
 ```bash
-python -m lerobot.scripts.eval \
+lerobot-eval \
     --policy.path=lerobot/diffusion_pusht \
     --env.type=pusht \
     --eval.batch_size=10 \
     --eval.n_episodes=10 \
     --policy.use_amp=false \
     --policy.device=cuda
-```
+````
 
 Note: After training your own policy, you can re-evaluate the checkpoints with:
 
 ```bash
-python -m lerobot.scripts.eval --policy.path={OUTPUT_DIR}/checkpoints/last/pretrained_model
+lerobot-eval --policy.path={OUTPUT_DIR}/checkpoints/last/pretrained_model
 ```
 
-See `python -m lerobot.scripts.eval --help` for more instructions.
+See `lerobot-eval --help` for more instructions.
 
 ### Train your own policy
 
@@ -261,7 +313,7 @@ A link to the wandb logs for the run will also show up in yellow in your termina
 
 \<img src="https://raw.githubusercontent.com/huggingface/lerobot/main/media/wandb.png" alt="WandB logs example"\>
 
-Note: For efficiency, during training every checkpoint is evaluated on a low number of episodes. You may use `--eval.n_episodes=500` to evaluate on more episodes than the default. Or, after training, you may want to re-evaluate your best checkpoints on more episodes or change the evaluation settings. See `python -m lerobot.scripts.eval --help` for more instructions.
+Note: For efficiency, during training every checkpoint is evaluated on a low number of episodes. You may use `--eval.n_episodes=500` to evaluate on more episodes than the default. Or, after training, you may want to re-evaluate your best checkpoints on more episodes or change the evaluation settings. See `lerobot-eval --help` for more instructions.
 
 #### Reproduce state-of-the-art (SOTA)
 
@@ -269,7 +321,7 @@ We provide some pretrained policies on our [hub page](https://huggingface.co/ler
 You can reproduce their training by loading the config from their run. Simply running:
 
 ```bash
-python -m lerobot.scripts.train --config_path=lerobot/diffusion_pusht
+lerobot-train --config_path=lerobot/diffusion_pusht
 ```
 
 reproduces SOTA results for Diffusion Policy on the PushT task.
@@ -311,7 +363,7 @@ If you want, you can cite this work with:
 
 ```bibtex
 @misc{cadene2024lerobot,
-    author = {Cadene, Remi and Alibert, Simon and Soare, Alexander and Gallouedec, Quentin and Zouitine, Adil and Palma, Steven and Kooijmans, Pepijn and Aractingi, Michel and Shukor, Mustafa and Aubakirova, Dana and Russi, Martino and Capuano, Francesco and Pascale, Caroline and Choghari, Jade and Moss, Jess and Wolf, Thomas},
+    author = {Cadene, Remi and Alibert, Simon and Soare, Alexander and Gallouedec, Quentin and Zouitine, Adil and Palma, Steven and Kooijmans, Pepijn and Aractingi, Michel and Shukor, Mustafa and Aubakirova, Dana and Russi, Martino and Capuano, Francesco and Pascal, Caroline and Choghari, Jade and Moss, Jess and Wolf, Thomas},
     title = {LeRobot: State-of-the-art Machine Learning for Real-World Robotics in Pytorch},
     howpublished = "\url{https://github.com/huggingface/lerobot}",
     year = {2024}
